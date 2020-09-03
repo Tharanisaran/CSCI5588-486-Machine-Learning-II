@@ -3,73 +3,85 @@ import os
 import collections
 
 class HillClimbing:
+    """ 
+    Initializing the constants 
+    STRING_LENGTH and NUMBER_OF_ITERATIONS 
+    """
     def __init__(self):
-        pass
+        self.STRING_LENGTH = 40
+        self.NUMBER_OF_ITERATIONS = 100
     
+    """ 
+    The below function creates a random array of 0's and 1's
+    given the array length  
+    """
     def CreateRandomArray(self,arsize):
         randarray = np.random.randint(2, size=arsize)
         return randarray
-
-    def CalculateFitness(self,ones_count):
-        return abs(13*ones_count-170)
-        
-	
-    def GetOnesCount(self,arr):
-	    return collections.Counter(arr)[1]
-
-    def GetNeighbour(self,index,arr):
-        temparr = list(arr) 
-        val = arr[index]
-        temparr[index] = 1 - val
-        return temparr
-
-
+    
+    """ 
+    The below function calculates the fitness value for the given random array
+    It counts the number of 1's in the given array and appies that in the function and returns
+    the fitness value 
+    """
+    def CalculateFitness(self,arr):
+        onescount = collections.Counter(arr)[1]
+        return abs(13*onescount-170)
+    
+    """ 
+    Given an array of length asize this function returns a array list of 
+    one bit changed neighbours of length asize 
+    """
+    def getNeighbours(self,arr,asize): 
+        neighbours = []
+        for index in range(asize):
+            temparr = list(arr)
+            temparr[index] = 1 - arr[index]
+            neighbours.append(temparr)
+        return neighbours
+    
+    """ 
+    Given a array list of arrays 
+    this function returns calculates Fitness value for each array in the list and 
+    returns the largest fitness value 
+    """
+    def GetLargestFV(self,arr):
+        largestFV = 0
+        for a in arr:
+            currentFV = self.CalculateFitness(a)
+            if currentFV > largestFV:
+                largestFV = currentFV
+                largestVN = a
+        return largestVN
 
 def main():
     hc = HillClimbing()
     
-    for turn in range(100):
-        arraySize = 40
-        pointarray = hc.CreateRandomArray(arraySize)
-        onesCount = hc.GetOnesCount(pointarray)
-        MaxFitness = hc.CalculateFitness(onesCount)
-        # print(hc.GetNeighbour(0,arr))
+    for iteration in range(hc.NUMBER_OF_ITERATIONS):
+        randomVC = hc.CreateRandomArray(hc.STRING_LENGTH)
+        funtionvalueRandomVC = hc.CalculateFitness(randomVC)
 
-        for i in range(arraySize):
-            print("Original Array: %s"%(str(pointarray)))
-            currNeighbour = hc.GetNeighbour(i,pointarray)
-            onesCount = hc.GetOnesCount(currNeighbour)
-            print("Neighbour Index %s : %s Onescount:%s"%(str(i),str(currNeighbour),str(onesCount)))
-            neighbourFitness = hc.CalculateFitness(onesCount)
-            if neighbourFitness > MaxFitness:
-                MaxFitness = neighbourFitness
+        shouldIContinue = True
 
-        print("Turn: %s - Final Max: %s"%(str(turn),str(MaxFitness)))
+        while(shouldIContinue and (iteration < hc.NUMBER_OF_ITERATIONS)):
+            
+            neighbours = hc.getNeighbours(randomVC,hc.STRING_LENGTH)
+            
+            largestVN = hc.GetLargestFV(neighbours)
 
-    # max=0
-    # while(max<2):
-    #     arr = hc.CreateRandomArray(40)
-    #     print(arr)
-        # ones_count=counting_ones(arr)
-        # print(ones_count)
-    """" current_fitness=fitness(ones_count)
-		print(current_fitness)
-		max+=1
-		neighbor_index=np.random.randint(0,len(arr)-1)
-		print(neighbor_index)
-		for i in range(len(arr)):
-			if i==neighbor_index:
-				if arr[i]==0:
-					arr[i]=1
-				else:
-					arr[i]=0
-			else:
-				arr2.append(arr[i])
-		print(arr2) """
+            functionValuelargestVN = hc.CalculateFitness(largestVN)
+
+            if funtionvalueRandomVC < functionValuelargestVN:
+                funtionvalueRandomVC = functionValuelargestVN
+                randomVC = largestVN
+            else:
+                shouldIContinue = False
+        
+        if iteration < 99:
+            print(funtionvalueRandomVC,end='')
+            print(',',end='')
+        else:
+            print(funtionvalueRandomVC)
 
 if __name__=="__main__":
     main()
-
-	
-					
-
