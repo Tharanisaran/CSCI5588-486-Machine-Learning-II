@@ -1,4 +1,4 @@
 from hillclimbing import HillClimbing
 
-for i in range(40):
-    print(i,abs(13*i-170))
+for i in range(51):
+    print(i,abs(14*i-190))

@@ -1,16 +1,17 @@
 import numpy as np
 import os
 import collections
+from math import exp
 
 
-class HillClimbing:
+class SimulatedAnnealing:
     """ 
     Initializing the constants 
     STRING_LENGTH and NUMBER_OF_ITERATIONS 
     """
     def __init__(self):
-        self.STRING_LENGTH = 40
-        self.MAX = 100
+        self.STRING_LENGTH = 50
+        self.MAX = 200
     
     """ 
     The below function creates a random array of 0's and 1's
@@ -30,7 +31,7 @@ class HillClimbing:
     the fitness value 
     """
     def CalculateFitness(self,onescount):
-        return abs(13*onescount-170)
+        return abs(14*onescount-190)
 
     def getOnesCount(self,arr):
         return collections.Counter(arr)[1]
@@ -63,42 +64,43 @@ class HillClimbing:
         return largestVN
 
 def main():
-    hc = HillClimbing()
+    sa = SimulatedAnnealing()
+
     #reset the algorithm for MAX times
     t = 0
-    while t < hc.MAX:
-        """
-        Selection of random array with zero's and one's evenly distributed to get the 
-        Global maximum value and Local Maximum value
-        """
-        if t%2 == 0:
-            randomVC = hc.CreateRandomArray(hc.STRING_LENGTH,np.random.randint(0,20))
-        else: 
-            randomVC = hc.CreateRandomArray(hc.STRING_LENGTH,np.random.randint(20,hc.STRING_LENGTH))
-        """
-        Calculating the number of ones for the random VC and Evaluating the fitness value 
-        for VC
-        """
-        randomOnescount = hc.getOnesCount(randomVC)
-        funtionvalueRandomVC = hc.CalculateFitness(randomOnescount)
+    Temperature = 100
+    randomVC = sa.CreateRandomArray(sa.STRING_LENGTH,np.random.randint(0,sa.STRING_LENGTH))
+    """
+    Calculating the number of ones for the random VC and Evaluating the fitness value 
+    for VC
+    """
+    randomOnescount = sa.getOnesCount(randomVC)
+    functionvalueRandomVC = sa.CalculateFitness(randomOnescount)
 
+    while t < sa.MAX:
         local = False
-        while(not(local) and (t < hc.MAX)):  
-            neighbours = hc.getNeighbours(randomVC,hc.STRING_LENGTH)
-            largestVN = hc.GetLargestFV(neighbours)
-            onesCountLargestVN = hc.getOnesCount(largestVN)
-            functionValuelargestVN = hc.CalculateFitness(onesCountLargestVN)
-            if funtionvalueRandomVC < functionValuelargestVN:
-                funtionvalueRandomVC = functionValuelargestVN
+        while(not(local) and (Temperature > 50)):  
+            neighbours = sa.getNeighbours(randomVC,sa.STRING_LENGTH)
+            largestVN = sa.GetLargestFV(neighbours)
+            onesCountLargestVN = sa.getOnesCount(largestVN)
+            functionValuelargestVN = sa.CalculateFitness(onesCountLargestVN)
+            expcalc = exp((functionValuelargestVN - functionvalueRandomVC)/Temperature)
+            if functionvalueRandomVC < functionValuelargestVN:
+                functionvalueRandomVC = functionValuelargestVN
+                randomVC = largestVN
+            elif np.random.uniform(0,1)< expcalc:
+                functionvalueRandomVC = functionValuelargestVN
                 randomVC = largestVN
             else:
                 local = True
-        if t < 99:
-            print(funtionvalueRandomVC,end='')
+            
+        if t < (sa.MAX-1):
+            print(functionvalueRandomVC,end='')
             print(',',end='')
         else:
-            print(funtionvalueRandomVC)
+            print(functionvalueRandomVC)
+        
+        Temperature = Temperature * 0.95
         t += 1
-
 if __name__=="__main__":
     main()
