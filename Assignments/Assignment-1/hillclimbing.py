@@ -2,6 +2,7 @@ import numpy as np
 import os
 import collections
 
+
 class HillClimbing:
     """ 
     Initializing the constants 
@@ -9,24 +10,30 @@ class HillClimbing:
     """
     def __init__(self):
         self.STRING_LENGTH = 40
-        self.NUMBER_OF_ITERATIONS = 100
+        self.MAX = 100
     
     """ 
     The below function creates a random array of 0's and 1's
-    given the array length  
+    given the array size and how many ones you want in that array   
     """
-    def CreateRandomArray(self,arsize):
-        randarray = np.random.randint(2, size=arsize)
-        return randarray
+    def CreateRandomArray(self,arsize,ones):
+        A = np.ones(ones, dtype=np.int)
+        B = np.zeros(arsize-ones, dtype=np.int)
+        C = np.concatenate((A, B), axis = 0)
+        # print(C)
+        np.random.shuffle(C)
+        return C
     
     """ 
     The below function calculates the fitness value for the given random array
-    It counts the number of 1's in the given array and appies that in the function and returns
+    It counts the number of 1's in the given array and applies that in the function and returns
     the fitness value 
     """
-    def CalculateFitness(self,arr):
-        onescount = collections.Counter(arr)[1]
+    def CalculateFitness(self,onescount):
         return abs(13*onescount-170)
+
+    def getOnesCount(self,arr):
+        return collections.Counter(arr)[1]
     
     """ 
     Given an array of length asize this function returns a array list of 
@@ -48,7 +55,8 @@ class HillClimbing:
     def GetLargestFV(self,arr):
         largestFV = 0
         for a in arr:
-            currentFV = self.CalculateFitness(a)
+            currentOnesCount = self.getOnesCount(a)
+            currentFV = self.CalculateFitness(currentOnesCount)
             if currentFV > largestFV:
                 largestFV = currentFV
                 largestVN = a
@@ -56,27 +64,34 @@ class HillClimbing:
 
 def main():
     hc = HillClimbing()
-    
-    for iteration in range(hc.NUMBER_OF_ITERATIONS):
-        randomVC = hc.CreateRandomArray(hc.STRING_LENGTH)
-        funtionvalueRandomVC = hc.CalculateFitness(randomVC)
+    #reset the algorithm for MAX times
+    for iteration in range(hc.MAX):
+        """
+        Selection of random array with zero's and one's evenly distributed to get the 
+        Global maximum value and Local Maximum value
+        """
+        if iteration%2 == 0:
+            randomVC = hc.CreateRandomArray(hc.STRING_LENGTH,np.random.randint(0,20))
+        else: 
+            randomVC = hc.CreateRandomArray(hc.STRING_LENGTH,np.random.randint(20,hc.STRING_LENGTH))
+        """
+        Calculating the number of ones for the random VC and Evaluating the fitness value 
+        for VC
+        """
+        randomOnescount = hc.getOnesCount(randomVC)
+        funtionvalueRandomVC = hc.CalculateFitness(randomOnescount)
 
-        shouldIContinue = True
-
-        while(shouldIContinue and (iteration < hc.NUMBER_OF_ITERATIONS)):
-            
+        local = True
+        while(local and (iteration < hc.MAX)):  
             neighbours = hc.getNeighbours(randomVC,hc.STRING_LENGTH)
-            
             largestVN = hc.GetLargestFV(neighbours)
-
-            functionValuelargestVN = hc.CalculateFitness(largestVN)
-
+            onesCountLargestVN = hc.getOnesCount(largestVN)
+            functionValuelargestVN = hc.CalculateFitness(onesCountLargestVN)
             if funtionvalueRandomVC < functionValuelargestVN:
                 funtionvalueRandomVC = functionValuelargestVN
                 randomVC = largestVN
             else:
-                shouldIContinue = False
-        
+                local = False
         if iteration < 99:
             print(funtionvalueRandomVC,end='')
             print(',',end='')
