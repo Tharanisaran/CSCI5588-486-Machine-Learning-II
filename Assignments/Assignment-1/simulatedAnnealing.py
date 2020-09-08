@@ -78,21 +78,17 @@ def main():
     functionvalueRandomVC = sa.CalculateFitness(randomOnescount)
 
     while t < sa.MAX:
-        local = False
-        while(not(local) and (Temperature > 50)):  
-            neighbours = sa.getNeighbours(randomVC,sa.STRING_LENGTH)
-            largestVN = sa.GetLargestFV(neighbours)
-            onesCountLargestVN = sa.getOnesCount(largestVN)
-            functionValuelargestVN = sa.CalculateFitness(onesCountLargestVN)
+        neighbours = sa.getNeighbours(randomVC,sa.STRING_LENGTH)
+        for neighbour in neighbours:
+            onescount = sa.getOnesCount(neighbour)
+            functionValuelargestVN = sa.CalculateFitness(onescount)
             expcalc = exp((functionValuelargestVN - functionvalueRandomVC)/Temperature)
             if functionvalueRandomVC < functionValuelargestVN:
                 functionvalueRandomVC = functionValuelargestVN
-                randomVC = largestVN
+                randomVC = neighbour
             elif np.random.uniform(0,1)< expcalc:
                 functionvalueRandomVC = functionValuelargestVN
-                randomVC = largestVN
-            else:
-                local = True
+                randomVC = neighbour
             
         if t < (sa.MAX-1):
             print(functionvalueRandomVC,end='')
