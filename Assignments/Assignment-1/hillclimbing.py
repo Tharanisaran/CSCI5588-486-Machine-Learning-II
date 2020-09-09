@@ -47,9 +47,9 @@ class HillClimbing:
         return neighbours
     
     """ 
-    Given a array list of arrays 
-    this function returns calculates Fitness value for each array in the list and 
-    returns the largest fitness value 
+    Given a list of neighbourhood arrays 
+    this function returns largest fitness value and the Largest neighbour VN
+ 
     """
     def GetLargestFV(self,arr):
         largestFV = 0
@@ -59,7 +59,7 @@ class HillClimbing:
             if currentFV > largestFV:
                 largestFV = currentFV
                 largestVN = a
-        return largestVN
+        return largestFV, largestVN
 
 def main():
     hc = HillClimbing()
@@ -82,11 +82,9 @@ def main():
         funtionvalueRandomVC = hc.CalculateFitness(randomOnescount)
 
         local = False
-        while(not(local) and (t < hc.MAX)):  
+        while(not(local)):  
             neighbours = hc.getNeighbours(randomVC,hc.STRING_LENGTH)
-            largestVN = hc.GetLargestFV(neighbours)
-            onesCountLargestVN = hc.getOnesCount(largestVN)
-            functionValuelargestVN = hc.CalculateFitness(onesCountLargestVN)
+            functionValuelargestVN, largestVN = hc.GetLargestFV(neighbours)
             if funtionvalueRandomVC < functionValuelargestVN:
                 funtionvalueRandomVC = functionValuelargestVN
                 randomVC = largestVN

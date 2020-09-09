@@ -70,13 +70,13 @@ def main():
         """
         for neighbour in neighbours:
             onescount = sa.getOnesCount(neighbour)
-            functionValuelargestVN = sa.CalculateFitness(onescount)
-            expcalc = exp((functionValuelargestVN - functionvalueRandomVC)/Temperature)
-            if functionvalueRandomVC < functionValuelargestVN:
-                functionvalueRandomVC = functionValuelargestVN
+            functionValueneigbourVN = sa.CalculateFitness(onescount)
+            expcalc = exp((functionValueneigbourVN - functionvalueRandomVC)/Temperature)
+            if functionvalueRandomVC < functionValueneigbourVN:
+                functionvalueRandomVC = functionValueneigbourVN
                 randomVC = neighbour
             elif np.random.uniform(0,1)< expcalc:
-                functionvalueRandomVC = functionValuelargestVN
+                functionvalueRandomVC = functionValueneigbourVN
                 randomVC = neighbour
         #Print the output
         if t < (sa.MAX-1):
