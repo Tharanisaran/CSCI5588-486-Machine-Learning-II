@@ -17,12 +17,11 @@ class HillClimbing:
     given the array size and how many ones you want in that array   
     """
     def CreateRandomArray(self,arsize,ones):
-        A = np.ones(ones, dtype=np.int)
-        B = np.zeros(arsize-ones, dtype=np.int)
-        C = np.concatenate((A, B), axis = 0)
-        # print(C)
-        np.random.shuffle(C)
-        return C
+        onesArray = np.ones(ones, dtype=np.int)
+        zerosArray = np.zeros(arsize-ones, dtype=np.int)
+        wholeArray = np.concatenate((onesArray, zerosArray), axis = 0)
+        np.random.shuffle(wholeArray)
+        return wholeArray
     
     """ 
     The below function calculates the fitness value for the given random array
