@@ -1,10 +1,15 @@
 import os
 import random 
+import operator
 
 
 class GeneticAlgorithm:
     def __init__(self):
-        self.populationList=[]
+        """
+        1. Initialize the Population 
+        """
+        self.populationList= []
+        self.crossoverPopulation = []
     """ 
     Input: Sequence text with hphphp....hhhppp
     Output: List [0,1,0,1,0,1,....,0,0,0,1,1,1]
@@ -54,60 +59,168 @@ class GeneticAlgorithm:
             assignedCoordinates.add(forwardPosition)
             currentPosition = forwardPosition
         return chromosome
+    """
+    Given a chromosome this function calculates and returns the fitness value
+    """
     def calculateFitness(self,chromosome):
         chromosome_dict={}
         fitness=0
         for indexposition,chromosomedata in enumerate(chromosome):
             chromosome_dict[chromosomedata[1]]=(indexposition,chromosomedata[0])
+
         for key,value in chromosome_dict.items():
+            #get the fitness value if there is a topological neighbour in right
             fitness = fitness + self.individualFitness(key,(key[0]+1,key[1]),chromosome_dict)
-
+            #get the fitness value if there is a topological neighbour in left
             fitness = fitness + self.individualFitness(key,(key[0]-1,key[1]),chromosome_dict)
-
+            #get the fitness value if there is a topological neighbour in up
             fitness = fitness + self.individualFitness(key,(key[0],key[1]+1),chromosome_dict)
-
+            #get the fitness value if there is a topological neighbour in down
             fitness = fitness + self.individualFitness(key,(key[0],key[1]-1),chromosome_dict)
         return fitness
-    
+    """
+    This function returns the individual fitness at a selected axis by comparing
+    the topological neighbours 
+    """
     def individualFitness(self,baseAxis,neighbourAxis,chromosome_dict):
+        #if the neighbouraxis is part of the chromosome orientation
         if neighbourAxis in chromosome_dict:
             baseGene=chromosome_dict[baseAxis]
             neighbourGene=chromosome_dict[neighbourAxis]
+            # checking the topological neighbours in ascending order and eliminating the covalent bonded neighbours 
             if (baseGene[0]<neighbourGene[0]) and (abs(baseGene[0]-neighbourGene[0])>1):
                 if baseGene[1]==0 and neighbourGene[1]==0:
                     return 1
         return 0 
+    
+    def rouletteWheelSelection(self,beforeCrossoverPopulation):
+        max=0
+        current=0
+        for i in beforeCrossoverPopulation:
+            max+=i[1]
+        selection=random.randint(0,max)
+        for i in beforeCrossoverPopulation:
+            current+=i[1]
+            if current>selection:
+                return i[0]
+    
+    def crossover(self,selectedChromosomes,crossoverPosition):
+        chromosome1 = selectedChromosomes[0]
+        chromosome2 = selectedChromosomes[1]
+        # print(chromosome1,chromosome2,crossoverPosition)
+        partOfChromosome1=chromosome1[:crossoverPosition+1]
+        partOfChromosome2=chromosome2[crossoverPosition+1:]
+        partOfChromosome1Axes={i[1] for i in partOfChromosome1}
 
+        #Detecting Previous Direction
+        prevDir = None
+
+        Ax = [0,0,0]
+        Ay = [0,0,0]
+
+        if chromosome1[crossoverPosition][1][1]==chromosome1[crossoverPosition-1][1][1]:
+            if (chromosome1[crossoverPosition-1][1][0] - chromosome1[crossoverPosition][1][0]) == 1:
+                prevDir = 'RIGHT'
+            else:
+                prevDir = 'LEFT'
+        else: 
+            if (chromosome1[crossoverPosition-1][1][1] - chromosome1[crossoverPosition][1][1]) == 1:
+                prevDir = 'UP'
+            else:
+                prevDir = 'DOWN'
+        
+        if prevDir == 'RIGHT':
+            Ax = [-1,0,0]
+            Ay = [0,1,-1]
+        elif prevDir == 'LEFT':
+            Ax = [1,0,0]
+            Ay = [0,1,-1]
+        elif prevDir == 'UP':
+            Ax = [1,-1,0]
+            Ay = [0,0,-1]
+        elif prevDir == 'DOWN':
+            Ax = [1,-1,0]
+            Ay = [0,0,1]
+
+        for rotate in range(3):
+            crossoverList = partOfChromosome2
+            crossover_Xdir = chromosome1[crossoverPosition][1][0]+Ax[rotate] - chromosome2[crossoverPosition+1][1][0]
+            crossover_Ydir = chromosome1[crossoverPosition][1][1]+Ay[rotate] - chromosome2[crossoverPosition+1][1][1]
+
+            crossoverList[0] = (crossoverList[0][0],(chromosome1[crossoverPosition][1][0]+Ax[rotate],chromosome1[crossoverPosition][1][1]+Ay[rotate])) 
+
+            for j in range(len(crossoverList)-1):
+                crossoverList[j+1] = (chromosome2[crossoverPosition+j+2][0],(chromosome2[crossoverPosition+j+2][1][0]+ crossover_Xdir ,chromosome2[crossoverPosition+j+2][1][1]+ crossover_Ydir)) 
+
+            crossover_Axes = {a[1] for a in crossoverList}
+
+            if not self.collision(partOfChromosome1Axes,crossover_Axes):
+                return partOfChromosome1 + crossoverList
+
+            elif rotate == 2: 
+                return None
+
+    def collision(self,axes1,axes2):
+        for axis in axes2:
+            if axis in axes1:
+                return True
+        return False
 
     def GA_Main(self,proteinList):
         sequence=proteinList[0][0]
         fitness=proteinList[0][1]
         # print(sequence)
         # print(fitness)
-        """
-        1. Initialize the Population 
-        """
+        chromosomeList = []
         binarySequence=self.getBinarySequence(sequence)
-        chromosome=self.chromosomeOrientation(binarySequence)
-        print(chromosome)
+
+        while (len(chromosomeList)<200):
+            try:
+                chromosomeList.append(self.chromosomeOrientation(binarySequence))
+            # When there is situation of collision while forming chromosome randomly, Indexerror occurs 
+            # I catch the exception and drop that structure 
+            except IndexError:
+                print("No Valid Options to select")
+                continue
         """
         2. Compute Fitness of Population for all Chromosome Ci
         """
-        print(self.calculateFitness(chromosome))
+        for chromosome in chromosomeList:
+            self.populationList.append((chromosome, self.calculateFitness(chromosome)))
+        # print(self.populationList[0])
         """
-        3. Sort the Population  
+        3. Sort the Population in descending order based on their fitness 
         """
+        self.populationListSorted = sorted(self.populationList,key=operator.itemgetter(1),reverse=True)
+        # print(self.populationListSorted[0])
         """ 
         4. Examine: C1/Progress or Max_gen, Exit Condition 
         """
 
         """
-        5. Take 5 to 10% of Elite and form a New Population 
+        5. Taken 10% of Elite and form a New Population 
         """
+        self.elitePopulation = self.populationListSorted[:20]
 
         """
         6. 80% crossover chromosomes and fill the New Population 
         """
+        beforeCrossoverPopulation = self.populationListSorted[20:180]
+        while (len(self.crossoverPopulation)<160):
+            try: 
+                selectedChromosomes=[]
+                for i in range(2):
+                    selectedChromosomes.append(self.rouletteWheelSelection(beforeCrossoverPopulation))
+                crossoverResult=self.crossover(selectedChromosomes,random.randint(1,len(selectedChromosomes[0])-2))
+
+                if not (crossoverResult==None):
+                    self.crossoverPopulation.append((crossoverResult,self.calculateFitness(crossoverResult)))
+            except Exception as e:
+                print(e)
+                continue
+
+        
+        print(self.crossoverPopulation)
         """ 
         7. Fillup Pop2 randomly
         """
