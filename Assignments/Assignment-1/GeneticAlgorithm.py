@@ -1,6 +1,8 @@
 import os
 import random 
 import operator
+import matplotlib.pyplot as plt
+from textwrap import wrap
 
 
 class GeneticAlgorithm:
@@ -8,36 +10,20 @@ class GeneticAlgorithm:
         """
         1. Initialize the Population 
         """
-        self.populationList= []
-        self.crossoverPopulation = []
-    """ 
-    Input: Sequence text with hphphp....hhhppp
-    Output: List [0,1,0,1,0,1,....,0,0,0,1,1,1]
-    
-    Function modifies the amino acid sequence into a binary 
-    sequence by replacing h with 0 and p with 1
-    """
-    def getBinarySequence(self,sequence):
-        binarySequence=[]
-        for gene in sequence:
-            if gene=='h':
-                binarySequence.append(0)
-            else:
-                binarySequence.append(1)
-        return binarySequence
+        self.newPopulationList = []
 
     """ 
     This module generates the Chromosome Orientation/structure in Random for the given sequence 
     Input: [gene1,gene2,....,gene_N]
     Output: [(gene1, (X1, Y1)), (gene2, (X2, Y2)), ...., (gene_N, (Xn, Yn))]
     """
-    def chromosomeOrientation(self,binarySequence):
+    def chromosomeOrientation(self,sequence):
         #Assigning the first value of binary sequence to (0,0) position initially
         currentPosition=(0,0)
-        chromosome=[(binarySequence[0],currentPosition)]
+        chromosome=[(sequence[0],currentPosition)]
         #Creating a dictionary to store assigned coordinates
         assignedCoordinates={currentPosition}
-        for gene in binarySequence[1:]:
+        for gene in sequence[1:]:
             allOptions=[]
             validOptions=[]
             # Adding the right direction option
@@ -68,7 +54,7 @@ class GeneticAlgorithm:
         for indexposition,chromosomedata in enumerate(chromosome):
             chromosome_dict[chromosomedata[1]]=(indexposition,chromosomedata[0])
 
-        for key,value in chromosome_dict.items():
+        for key,_ in chromosome_dict.items():
             #get the fitness value if there is a topological neighbour in right
             fitness = fitness + self.individualFitness(key,(key[0]+1,key[1]),chromosome_dict)
             #get the fitness value if there is a topological neighbour in left
@@ -86,20 +72,22 @@ class GeneticAlgorithm:
         #if the neighbouraxis is part of the chromosome orientation
         if neighbourAxis in chromosome_dict:
             baseGene=chromosome_dict[baseAxis]
+            # print(baseGene)
             neighbourGene=chromosome_dict[neighbourAxis]
+            # print(neighbourGene)
             # checking the topological neighbours in ascending order and eliminating the covalent bonded neighbours 
             if (baseGene[0]<neighbourGene[0]) and (abs(baseGene[0]-neighbourGene[0])>1):
-                if baseGene[1]==0 and neighbourGene[1]==0:
+                if baseGene[1]=='h' and neighbourGene[1]=='h':
                     return 1
         return 0 
     
-    def rouletteWheelSelection(self,beforeCrossoverPopulation):
+    def rouletteWheelSelection(self,population):
         max=0
         current=0
-        for i in beforeCrossoverPopulation:
+        for i in population:
             max+=i[1]
         selection=random.randint(0,max)
-        for i in beforeCrossoverPopulation:
+        for i in population:
             current+=i[1]
             if current>selection:
                 return i[0]
@@ -132,9 +120,11 @@ class GeneticAlgorithm:
         if prevDir == 'RIGHT':
             Ax = [-1,0,0]
             Ay = [0,1,-1]
+           
         elif prevDir == 'LEFT':
             Ax = [1,0,0]
             Ay = [0,1,-1]
+            
         elif prevDir == 'UP':
             Ax = [1,-1,0]
             Ay = [0,0,-1]
@@ -142,12 +132,12 @@ class GeneticAlgorithm:
             Ax = [1,-1,0]
             Ay = [0,0,1]
 
-        for rotate in range(3):
+        for itr in range(3):
             crossoverList = partOfChromosome2
-            crossover_Xdir = chromosome1[crossoverPosition][1][0]+Ax[rotate] - chromosome2[crossoverPosition+1][1][0]
-            crossover_Ydir = chromosome1[crossoverPosition][1][1]+Ay[rotate] - chromosome2[crossoverPosition+1][1][1]
+            crossover_Xdir = chromosome1[crossoverPosition][1][0]+Ax[itr] - chromosome2[crossoverPosition+1][1][0]
+            crossover_Ydir = chromosome1[crossoverPosition][1][1]+Ay[itr] - chromosome2[crossoverPosition+1][1][1]
 
-            crossoverList[0] = (crossoverList[0][0],(chromosome1[crossoverPosition][1][0]+Ax[rotate],chromosome1[crossoverPosition][1][1]+Ay[rotate])) 
+            crossoverList[0] = (crossoverList[0][0],(chromosome1[crossoverPosition][1][0]+Ax[itr],chromosome1[crossoverPosition][1][1]+Ay[itr])) 
 
             for j in range(len(crossoverList)-1):
                 crossoverList[j+1] = (chromosome2[crossoverPosition+j+2][0],(chromosome2[crossoverPosition+j+2][1][0]+ crossover_Xdir ,chromosome2[crossoverPosition+j+2][1][1]+ crossover_Ydir)) 
@@ -157,7 +147,7 @@ class GeneticAlgorithm:
             if not self.collision(partOfChromosome1Axes,crossover_Axes):
                 return partOfChromosome1 + crossoverList
 
-            elif rotate == 2: 
+            elif itr == 2: 
                 return None
 
     def collision(self,axes1,axes2):
@@ -166,75 +156,196 @@ class GeneticAlgorithm:
                 return True
         return False
 
-    def GA_Main(self,proteinList):
-        sequence=proteinList[0][0]
-        fitness=proteinList[0][1]
+    def mutate(self,chromosome):
+        # print(chromosome)
+        # Selecting the random index by omitting 1st and last positions. 
+        # This index will be used for mutation 
+        randomIndexInChromosome = random.randint(1,len(chromosome)-2)
+        # print(randomIndexInChromosome)
+
+        selectedGeneAxis = chromosome[randomIndexInChromosome][1]
+
+        # First Part will remain constant 
+        firstPart = chromosome[:randomIndexInChromosome+1]
+        possibleCollisionAxes = {i[1] for i in firstPart}
+
+        #Second part will be rotated and joined 
+        secondPart = chromosome[randomIndexInChromosome+1:]
+
+        #90 Degree Rotation
+        rotated=[(value,(axis[1]+selectedGeneAxis[0]-selectedGeneAxis[1],selectedGeneAxis[0]+selectedGeneAxis[1]-axis[0])) for value,axis in secondPart]
+        rotatedAxes={i[1] for i in rotated}
+        if (not(self.collision(possibleCollisionAxes,rotatedAxes))):
+            # print("90 Rotated")
+            return firstPart+rotated
+
+        #180 Degree Rotation
+        rotated=[(value,(2*selectedGeneAxis[0]-axis[0],2*selectedGeneAxis[1]-axis[1])) for value,axis in secondPart]
+        rotatedAxes={i[1] for i in rotated}
+        if (not(self.collision(possibleCollisionAxes,rotatedAxes))):
+            # print("180 rotated")
+            return firstPart+rotated
+
+        #270 Degree Rotation
+        rotated=[(value,(selectedGeneAxis[0]+selectedGeneAxis[1]-axis[1],axis[0]+selectedGeneAxis[1]-selectedGeneAxis[0])) for value,axis in secondPart]
+        rotatedAxes={i[1] for i in rotated}
+        if (not(self.collision(possibleCollisionAxes,rotatedAxes))):
+            # print("270 Rotated")
+            return firstPart+rotated
+
+        # If all rotations failed 
+        return None
+
+    def plotFigure(self,chromosome,filename,sequence,bestfitness,maxFitness):
+        x = [x[1][0] for x in chromosome]
+        y = [y[1][1] for y in chromosome]
+        x0 = [x[1][0] for x in chromosome if x[0]=='h' ]
+        x1 = [x[1][0] for x in chromosome if x[0]=='p' ]
+        y0 = [y[1][1] for y in chromosome if y[0]=='h' ]
+        y1 = [y[1][1] for y in chromosome if y[0]=='p' ]
+        plt.title("\n".join(wrap("Sequence: '%s', Best Fitness: %d, Max_Fitness: %d"%(sequence,bestfitness,maxFitness))))
+        plt.plot(x,y,linewidth=3.0)
+        hmarker = dict(color='0',marker='o',markersize=10,linewidth=0,label='h')
+        plt.plot(x0,y0,**hmarker)
+        pmarker = dict(color='0',marker='o',markersize=10,fillstyle='none',linewidth=0,label='p')
+        plt.plot(x1,y1,**pmarker)
+        plt.grid(True)
+        # plt.show()
+        plt.legend(loc="best")
+        plt.savefig('figure-%s'%(str(filename)))
+        plt.close()
+
+    def GA_Main(self,proteinList,sIdx):
+        sequence=proteinList[0]
+        maxFitness=proteinList[1]
         # print(sequence)
         # print(fitness)
         chromosomeList = []
-        binarySequence=self.getBinarySequence(sequence)
+        populationList = []
+        elitePopulation = []
+        crossoverPopulation = []
+        randomPopulation = []
+        topFitnessList = []
+        
+        generation = 0
+        # binarySequence=self.getBinarySequence(sequence)
 
-        while (len(chromosomeList)<200):
+        while (len(chromosomeList)<300):
             try:
-                chromosomeList.append(self.chromosomeOrientation(binarySequence))
+                chromosomeList.append(self.chromosomeOrientation(list(sequence)))
             # When there is situation of collision while forming chromosome randomly, Indexerror occurs 
             # I catch the exception and drop that structure 
             except IndexError:
-                print("No Valid Options to select")
+                # print("No Valid Options to select")
                 continue
         """
         2. Compute Fitness of Population for all Chromosome Ci
         """
         for chromosome in chromosomeList:
-            self.populationList.append((chromosome, self.calculateFitness(chromosome)))
-        # print(self.populationList[0])
+            populationList.append((chromosome, self.calculateFitness(chromosome)))
+        # print(self.populationList[0],len(self.populationList))
         """
         3. Sort the Population in descending order based on their fitness 
         """
-        self.populationListSorted = sorted(self.populationList,key=operator.itemgetter(1),reverse=True)
-        # print(self.populationListSorted[0])
+        populationListSorted = sorted(populationList,key=operator.itemgetter(1),reverse=True)
+        # print(*populationListSorted,sep='\n')
+        #currentGenerationPopulation = 
         """ 
         4. Examine: C1/Progress or Max_gen, Exit Condition 
         """
+        while generation < 80000: 
+            print("Generation Number #%d"%(generation))
+            if generation > 0: 
+                currentGenerationPopulationSorted = sorted(self.newPopulationList,key=operator.itemgetter(1),reverse=True)
+                self.newPopulationList = []
+            else: 
+                currentGenerationPopulationSorted = populationListSorted
+            
+            topFitness = currentGenerationPopulationSorted[0][1]
+            topFitnessList.append(topFitness)
+            print("Top_Fitness: %d"%(topFitness))
+            if generation>80000:
+                break
+            if topFitness == maxFitness:
+                self.plotFigure(currentGenerationPopulationSorted[0][0],sIdx,sequence,topFitness,maxFitness)
+                break
+            if len(topFitnessList)>100:
+                if len(set(topFitnessList[-20:]))==1:
+                    print("No Progress - So Breaking")
+                    self.plotFigure(currentGenerationPopulationSorted[0][0],sIdx,sequence,topFitness,maxFitness)
+                    break
+            
+            """
+            5. Taken 5% of Elite and form a New Population 
+            """
+            elitePopulation = currentGenerationPopulationSorted[:15]
+            self.newPopulationList = self.newPopulationList + elitePopulation
+            # print("After Elite : %d"%(len(self.newPopulationList)))
+            """
+            6. 80% crossover chromosomes and fill the New Population 
+            """
+            beforeCrossoverPopulation = currentGenerationPopulationSorted[15:255]
+            crossoverResultList = []
+            while (len(crossoverResultList)<240):
+                try: 
+                    selectedChromosomes=[]
+                    for _ in range(2):
+                        selectedChromosomes.append(self.rouletteWheelSelection(beforeCrossoverPopulation))
+                    crossoverResult=self.crossover(selectedChromosomes,random.randint(2,len(selectedChromosomes[0])-2))
+                    if not (crossoverResult==None):
+                        crossoverResultList.append(crossoverResult)
+                except:
+                    # print(e)
+                    continue
+            
+            for xover in crossoverResultList:
+                crossoverPopulation.append((xover,self.calculateFitness(xover)))
+            # print(crossoverPopulation)
+            crossoverPopulationSorted = sorted(crossoverPopulation,key=operator.itemgetter(1),reverse=True)
+            # print(self.crossoverPopulation)
+            self.newPopulationList = self.newPopulationList + crossoverPopulationSorted
+            # print("After Crossover : %d"%(len(self.newPopulationList)))
+            """ 
+            7. Fillup Pop2 randomly
+            """
+            randomPopulation = []
+            forRandomPopulation = crossoverPopulationSorted + currentGenerationPopulationSorted[255:]
+            for _ in range(30):
+                selectedIndex = random.randint(0,len(forRandomPopulation)-1)
+                randomPopulation.append(forRandomPopulation[selectedIndex])
+            self.newPopulationList = self.newPopulationList + randomPopulation
+            # print("After Random : %d"%(len(self.newPopulationList)))
+            """ 
+            8. Mutate the 5% of the Non elite chromosome in the 
+            population1 and fill it in Pop2  
+            """
+            mutationPopulation = []
+            while len(mutationPopulation)<15:
+                selectedChromosomeIndex = random.randint(15,len(currentGenerationPopulationSorted)-1)
+                selectedChromosometoMutate = currentGenerationPopulationSorted[selectedChromosomeIndex]
+                # print(selectedPopulationForMutation[selectedChromosomeIndex])
+                mutationResult = self.mutate(selectedChromosometoMutate[0])
+                    # print(mutationResult)
+                if not (mutationResult == None):
+                    mutationPopulation.append((mutationResult,self.calculateFitness(mutationResult)))
+            
+            self.newPopulationList = self.newPopulationList + mutationPopulation
+            # print("After Mutation : %d"%(len(self.newPopulationList)))
+            """ 
+            9.Increase Generation and Goto Step2
+            """
+            # self.newPopulationList = elitePopulation + randomPopulation 
+            # print(currentGenerationPopulation[:30],sep='\n')
+            # print(len(self.newPopulationList))
+            elitePopulation = []
+            crossoverPopulation = []
+            randomPopulation = []
+            generation += 1
 
-        """
-        5. Taken 10% of Elite and form a New Population 
-        """
-        self.elitePopulation = self.populationListSorted[:20]
-
-        """
-        6. 80% crossover chromosomes and fill the New Population 
-        """
-        beforeCrossoverPopulation = self.populationListSorted[20:180]
-        while (len(self.crossoverPopulation)<160):
-            try: 
-                selectedChromosomes=[]
-                for i in range(2):
-                    selectedChromosomes.append(self.rouletteWheelSelection(beforeCrossoverPopulation))
-                crossoverResult=self.crossover(selectedChromosomes,random.randint(1,len(selectedChromosomes[0])-2))
-
-                if not (crossoverResult==None):
-                    self.crossoverPopulation.append((crossoverResult,self.calculateFitness(crossoverResult)))
-            except Exception as e:
-                print(e)
-                continue
-
-        
-        print(self.crossoverPopulation)
-        """ 
-        7. Fillup Pop2 randomly
-        """
-        """ 
-        8. Mutate the 5% to 50% Non elite chromosome in the 
-        population1 and fill it in Pop2  
-        """
-        """ 
-        9.Increase Generation and Goto Step2
-        """
 
 
 def main():
-    with open("C:\\data\\tharugit\\CSCI5588-486-Machine-Learning-II\\Assignments\\Assignment-1\\Input.txt") as f:
+    with open("Python-Samples\\Input.txt") as f:
         content = f.readlines()
     seqValues = []
     fitnessValues = []
@@ -247,8 +358,9 @@ def main():
                 seqValues.append(line.replace("Seq = ",""))
             if "Fitness =" in line:
                 fitnessValues.append(abs(int(line.replace("Fitness = ",""))))
-    GeneticAlgorithm().GA_Main(list(zip(seqValues,fitnessValues)))
+    proteinList = list(zip(seqValues,fitnessValues))
+    for idx,value in enumerate(proteinList):
+        GeneticAlgorithm().GA_Main(value,idx)
 
 if __name__ == '__main__':
-    main()               
-    
+    main()  
