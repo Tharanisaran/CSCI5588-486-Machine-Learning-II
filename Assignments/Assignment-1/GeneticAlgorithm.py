@@ -132,6 +132,7 @@ class GeneticAlgorithm:
             Ax = [1,-1,0]
             Ay = [0,0,1]
 
+        # performing three crossovers based on the direction of the first chromosome
         for itr in range(3):
             crossoverList = partOfChromosome2
             crossover_Xdir = chromosome1[crossoverPosition][1][0]+Ax[itr] - chromosome2[crossoverPosition+1][1][0]
@@ -203,6 +204,7 @@ class GeneticAlgorithm:
         x1 = [x[1][0] for x in chromosome if x[0]=='p' ]
         y0 = [y[1][1] for y in chromosome if y[0]=='h' ]
         y1 = [y[1][1] for y in chromosome if y[0]=='p' ]
+        plt.figure(figsize=(10,8))
         plt.title("\n".join(wrap("Sequence: '%s', Best Fitness: %d, Max_Fitness: %d"%(sequence,bestfitness,maxFitness))))
         plt.plot(x,y,linewidth=3.0)
         hmarker = dict(color='0',marker='o',markersize=10,linewidth=0,label='h')
@@ -264,13 +266,20 @@ class GeneticAlgorithm:
             topFitness = currentGenerationPopulationSorted[0][1]
             topFitnessList.append(topFitness)
             print("Top_Fitness: %d"%(topFitness))
+            """
+            Breaking conditions defined below
+            """ 
+            # break if the program reached 80000 generations
             if generation>80000:
                 break
+            # break the program if the maximum fitness is attained 
             if topFitness == maxFitness:
                 self.plotFigure(currentGenerationPopulationSorted[0][0],sIdx,sequence,topFitness,maxFitness)
                 break
+            # break the program if there is no progress in the fitness value after 100 iterations, 
+            # if the last 30 top fitness is same exit the program 
             if len(topFitnessList)>100:
-                if len(set(topFitnessList[-20:]))==1:
+                if len(set(topFitnessList[-30:]))==1:
                     print("No Progress - So Breaking")
                     self.plotFigure(currentGenerationPopulationSorted[0][0],sIdx,sequence,topFitness,maxFitness)
                     break
@@ -345,7 +354,7 @@ class GeneticAlgorithm:
 
 
 def main():
-    with open("Python-Samples\\Input.txt") as f:
+    with open("Input.txt") as f:
         content = f.readlines()
     seqValues = []
     fitnessValues = []
