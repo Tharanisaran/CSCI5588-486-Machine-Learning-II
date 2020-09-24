@@ -330,8 +330,8 @@ class GeneticAlgorithm:
             """
             mutationPopulation = []
             while len(mutationPopulation)<15:
-                selectedChromosomeIndex = random.randint(15,len(currentGenerationPopulationSorted)-1)
-                selectedChromosometoMutate = currentGenerationPopulationSorted[selectedChromosomeIndex]
+                selectedChromosomeIndex = random.randint(15,len(self.newPopulationList)-1)
+                selectedChromosometoMutate = self.newPopulationList.pop(selectedChromosomeIndex)
                 # print(selectedPopulationForMutation[selectedChromosomeIndex])
                 mutationResult = self.mutate(selectedChromosometoMutate[0])
                     # print(mutationResult)
@@ -368,8 +368,9 @@ def main():
             if "Fitness =" in line:
                 fitnessValues.append(abs(int(line.replace("Fitness = ",""))))
     proteinList = list(zip(seqValues,fitnessValues))
-    for idx,value in enumerate(proteinList):
-        GeneticAlgorithm().GA_Main(value,idx)
+    # for idx,value in enumerate(proteinList):
+    idx=0
+    GeneticAlgorithm().GA_Main(proteinList[idx],idx)
 
 if __name__ == '__main__':
     main()  

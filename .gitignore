@@ -4,4 +4,6 @@ Assignments/Assignment-1/Lib
 Assignments/Assignment-1/Scripts
 Assignments/Assignment-1/*.cfg
 Assignments/Assignment-1/build
-Assignments/Assignment-1/PA1_*
+# Avoid executable folders
+Assignments/Assignment-1/PA1_Tharani_Maaneeivaannan_2575198/Executable
+Assignments/Assignment-1/PA_1B_Tharani_Maaneeivaannan_2575198/GA_Executable
