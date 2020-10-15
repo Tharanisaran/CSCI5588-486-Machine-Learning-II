@@ -1,0 +1,11 @@
+@RELATION Cancer_Detection_Test        %  Your preferred name of the project/dataset
+ 
+@ATTRIBUTE Size real                   % Numeric attributes, can be real or integer numbers. 
+@ATTRIBUTE Age real
+@ATTRIBUTE Class {Malignant, Benign}   % Nominal attributes
+
+@DATA
+0.15,0.11,Benign
+1.92,0.31,Benign
+3.5,4.2,Malignant
+3.1,3.3,Malignant
